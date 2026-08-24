@@ -1,0 +1,12 @@
+# Datasets and outputs
+datasets/
+output/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Large files and documents
+*.pdf
+*.zip
+*.pth
