@@ -34,7 +34,8 @@ AISFormer-Pytorch/
 ├── output/                    # Training outputs and checkpoints
 ├── train.py                   # Training script
 ├── evaluate.py                # Evaluation script
-└── demo.py                    # Inference visualization script
+├── demo.py                    # Inference visualization script
+└── requirements.txt           # Environment dependencies
 ```
 
 ## Hyperparameters and Official Setup Comparison
@@ -51,7 +52,15 @@ This framework aligns with the official hyperparameters as much as possible. How
 
 ## Standard Operating Procedure (SOP)
 
-### 1. Model Training
+### 1. Environment Setup
+
+Install the required dependencies via the `requirements.txt` file:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Model Training
 
 Ensure the KINS dataset is placed according to the directory structure above, then execute the following command to start training:
 
@@ -63,7 +72,7 @@ python train.py --batch_size 1 --grad_accum 8 --official_loss_weight
 **Training Output:**
 Model weights and TensorBoard logs will be saved in `output/kins_2026/run_official/` (or a custom path via `--output_dir`).
 
-### 2. Model Evaluation
+### 3. Model Evaluation
 
 Use the validation set (`instances_val.json`) to evaluate AP (Average Precision):
 
@@ -71,7 +80,7 @@ Use the validation set (`instances_val.json`) to evaluate AP (Average Precision)
 python evaluate.py --checkpoint output/kins_2026/run_official/model_best.pth --official_loss_weight
 ```
 
-### 3. Model Inference and Visualization (Demo)
+### 4. Model Inference and Visualization (Demo)
 
 Run inference on a single image or a batch of images and output Amodal/Visible/Invisible Mask visualizations:
 
