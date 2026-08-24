@@ -1,3 +1,7 @@
+# ==============================================================================
+# Functional Block: Positional Encoding Block
+# Description: This module is responsible for the essential operations of Positional Encoding Block.
+# ==============================================================================
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """
 Various positional encodings for the transformer.
@@ -140,3 +144,4 @@ def build_position_encoding(args):
         raise ValueError(f"not supported {args.position_embedding}")
 
     return position_embedding
+

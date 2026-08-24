@@ -1,3 +1,7 @@
+# ==============================================================================
+# Functional Block: Inference and Visualization Block
+# Description: This module is responsible for the essential operations of Inference and Visualization Block.
+# ==============================================================================
 import torch
 import os
 import cv2
@@ -196,3 +200,4 @@ if __name__ == "__main__":
     
     # ?·è??¹æ¬¡?¨è?
     run_demo_folder(input_dir, output_dir, ckpt, backbone_name=MY_BACKBONE, conf_thresh=0.6, mask_thresh=0.3)
+

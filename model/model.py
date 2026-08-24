@@ -1,3 +1,7 @@
+# ==============================================================================
+# Functional Block: Main Model Architecture Block
+# Description: This module is responsible for the essential operations of Main Model Architecture Block.
+# ==============================================================================
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -640,3 +644,4 @@ class AISFormerAmodal(nn.Module):
         losses = {}; losses.update(detector_losses); losses.update(proposal_losses)
         if self.training: return losses
         return detections
+

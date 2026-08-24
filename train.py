@@ -1,3 +1,7 @@
+# ==============================================================================
+# Functional Block: Model Training and Optimization Block
+# Description: This module is responsible for the essential operations of Model Training and Optimization Block.
+# ==============================================================================
 import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
@@ -337,3 +341,4 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate (default: 1e-4 for AdamW)")
     args = parser.parse_args()
     main(args)
+

@@ -1,3 +1,7 @@
+# ==============================================================================
+# Functional Block: Transformer Encoder Decoder Block
+# Description: This module is responsible for the essential operations of Transformer Encoder Decoder Block.
+# ==============================================================================
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -236,3 +240,4 @@ class TransformerDecoder(nn.Module):
             return torch.stack(intermediate)
 
         return output.unsqueeze(0)
+

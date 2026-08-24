@@ -1,3 +1,7 @@
+# ==============================================================================
+# Functional Block: Dataset Loading and Preprocessing Block
+# Description: This module is responsible for the essential operations of Dataset Loading and Preprocessing Block.
+# ==============================================================================
 import torch
 import os
 import numpy as np
@@ -7,7 +11,7 @@ import pycocotools.mask as mask_util
 import random 
 from torchvision.transforms import v2 as T
 
-# 基礎轉換
+# ?��?轉�?
 def get_transform(train):
     transforms = []
     transforms.append(T.ToImage())
@@ -22,12 +26,12 @@ class AmodalTomatoDataset(torch.utils.data.Dataset):
         self.ids = list(sorted(self.coco.imgs.keys()))
         self.target_size = target_size
         self.is_train = "train" in annotations_file.lower()
-        print(f"📂 Dataset initialized. Mode: CPU (Pure PIL) Resize to {target_size}, is_train={self.is_train}")
+        print(f"?? Dataset initialized. Mode: CPU (Pure PIL) Resize to {target_size}, is_train={self.is_train}")
 
     def _polygons_to_mask(self, segm, height, width):
-        """Helper: 將 Polygon/RLE 轉為 Numpy array (uint8)"""
-        # [關鍵修正] 這裡原本回傳 torch.zeros，導致 PIL 崩潰
-        # 現在統一回傳 np.zeros
+        """Helper: �?Polygon/RLE 轉為 Numpy array (uint8)"""
+        # [?�鍵修正] ?�裡?�本?�傳 torch.zeros，�???PIL 崩潰
+        # ?�在統�??�傳 np.zeros
         
         if isinstance(segm, list):
             if not segm: 
@@ -40,22 +44,22 @@ class AmodalTomatoDataset(torch.utils.data.Dataset):
             return np.zeros((height, width), dtype=np.uint8)
         
         mask = mask_util.decode(rle)
-        # mask 本身就是 numpy array
+        # mask ?�身就是 numpy array
         return mask
 
     def _resize_sample_cpu(self, data):
-        """使用純 PIL 進行所有縮放 (最穩定，避免 Illegal Instruction)"""
+        """使用�?PIL ?��??�?�縮??(?�穩�?，避??Illegal Instruction)"""
         w, h = data['width'], data['height']
         scale = self.target_size / max(w, h)
         
         if scale >= 1.0:
-            # 不需縮放，直接轉 Tensor
+            # 不�?縮放，直?��? Tensor
             img_tensor = T.functional.to_image(data['image'])
             img_tensor = T.functional.to_dtype(img_tensor, torch.float32, scale=True)
             data['image'] = img_tensor
             
-            # 將 masks (numpy list) 轉為 Tensor stack
-            # 這裡必須用 np.stack，因為 list 裡面現在全是 numpy array
+            # �?masks (numpy list) 轉為 Tensor stack
+            # ?�裡必�???np.stack，�???list 裡面?�在?�是 numpy array
             data['vis_masks'] = torch.from_numpy(np.stack(data['vis_masks'])) if data['vis_masks'] else torch.zeros((0, h, w), dtype=torch.uint8)
             data['amodal_masks'] = torch.from_numpy(np.stack(data['amodal_masks'])) if data['amodal_masks'] else torch.zeros((0, h, w), dtype=torch.uint8)
             data['bg_masks'] = torch.from_numpy(np.stack(data['bg_masks'])) if data['bg_masks'] else torch.zeros((0, h, w), dtype=torch.uint8)
@@ -76,7 +80,7 @@ class AmodalTomatoDataset(torch.utils.data.Dataset):
             
             resized_masks = []
             for mask_np in masks_list:
-                # Numpy -> PIL (這裡現在安全了，因為 mask_np 確信是 numpy)
+                # Numpy -> PIL (?�裡?�在安全了�??�為 mask_np 確信??numpy)
                 mask_pil = Image.fromarray(mask_np)
                 # Resize (Nearest to keep 0/1)
                 mask_pil = mask_pil.resize((new_w, new_h), resample=Image.NEAREST)
@@ -137,7 +141,7 @@ class AmodalTomatoDataset(torch.utils.data.Dataset):
             boxes_t = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
             boxes_t[:, 2:] += boxes_t[:, :2] 
             labels_t = torch.as_tensor(labels, dtype=torch.int64)
-            # masks 現在是 list of numpy arrays
+            # masks ?�在??list of numpy arrays
         else:
             boxes_t = torch.zeros((0, 4), dtype=torch.float32)
             labels_t = torch.zeros(0, dtype=torch.int64)

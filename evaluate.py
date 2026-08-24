@@ -1,3 +1,7 @@
+# ==============================================================================
+# Functional Block: Model Evaluation and Metrics Block
+# Description: This module is responsible for the essential operations of Model Evaluation and Metrics Block.
+# ==============================================================================
 import torch
 import os
 import numpy as np
@@ -344,3 +348,4 @@ if __name__ == "__main__":
     parser.add_argument("--csv_path", default="output/kins_2026/run_official/resnet50_DA_Run/kins_val_results.csv")
     parser.add_argument("--use_light_mask_head", action="store_true", help="Use the official lightweight mask head")
     run_evaluation(parser.parse_args())
+

@@ -1,3 +1,7 @@
+# ==============================================================================
+# Functional Block: Multi Layer Perceptron Block
+# Description: This module is responsible for the essential operations of Multi Layer Perceptron Block.
+# ==============================================================================
 import torch.nn as nn
 from torch.nn import functional as F
 
@@ -13,3 +17,4 @@ class MLP(nn.Module):
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
         return x
+
