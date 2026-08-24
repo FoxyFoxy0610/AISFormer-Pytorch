@@ -16,26 +16,26 @@ To address these pain points, this project re-develops the same model architectu
 
 ```text
 AISFormer-Pytorch/
-â”œâ”€â”€ model/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ model.py               # Main model architecture (Aligned RoI, Light Mask Head)
-â”‚   â”œâ”€â”€ dataset.py             # KINS dataset loader (handles amodal/inmodal mask conversion)
-â”‚   â”œâ”€â”€ transformer.py         # Transformer Encoder/Decoder
-â”‚   â”œâ”€â”€ position_encoding.py   # Position encoding
-â”‚   â””â”€â”€ mlp.py                 # MLP classifier/regressor
-â”œâ”€â”€ datasets/
-â”‚   â””â”€â”€ KINS/                  # KINS dataset storage
-â”‚       â”œâ”€â”€ instances_train.json  # Training annotations
-â”‚       â”œâ”€â”€ instances_val.json    # Validation annotations
-â”‚       â”œâ”€â”€ training/
-â”‚       â”‚   â””â”€â”€ image_2/          # Training and validation images
-â”‚       â””â”€â”€ testing/
-â”‚           â””â”€â”€ image_2/          # Testing images
-â”œâ”€â”€ output/                    # Training outputs and checkpoints
-â”œâ”€â”€ train.py                   # Training script
-â”œâ”€â”€ evaluate.py                # Evaluation script
-â”œâ”€â”€ demo.py                    # Inference visualization script
-â””â”€â”€ requirements.txt           # Environment dependencies
+?œâ??€ model/
+??  ?œâ??€ __init__.py
+??  ?œâ??€ model.py               # Main model architecture (Aligned RoI, Light Mask Head)
+??  ?œâ??€ dataset.py             # KINS dataset loader (handles amodal/inmodal mask conversion)
+??  ?œâ??€ transformer.py         # Transformer Encoder/Decoder
+??  ?œâ??€ position_encoding.py   # Position encoding
+??  ?”â??€ mlp.py                 # MLP classifier/regressor
+?œâ??€ datasets/
+??  ?”â??€ KINS/                  # KINS dataset storage
+??      ?œâ??€ instances_train.json  # Training annotations
+??      ?œâ??€ instances_val.json    # Validation annotations
+??      ?œâ??€ training/
+??      ??  ?”â??€ image_2/          # Training and validation images
+??      ?”â??€ testing/
+??          ?”â??€ image_2/          # Testing images
+?œâ??€ output/                    # Training outputs and checkpoints
+?œâ??€ train.py                   # Training script
+?œâ??€ evaluate.py                # Evaluation script
+?œâ??€ demo.py                    # Inference visualization script
+?”â??€ requirements.txt           # Environment dependencies
 ```
 
 ## Hyperparameters and Official Setup Comparison
@@ -49,6 +49,20 @@ This framework aligns with the official hyperparameters as much as possible. How
 | **Optimizer** | AdamW (lr=1e-4, wd=0.05) | AdamW (lr=1e-4, wd=0.05) | Aligned. |
 | **Learning Rate Schedule** | `CosineAnnealingLR` | `MultiStepLR` (typically drops LR at 24k/44k steps) | Currently using Cosine Annealing for smooth decay. To replicate the official setup exactly, change this to MultiStepLR in `train.py`. |
 | **Batch Size** | Default `--batch_size 1` | Typically `8` or `16` (across multiple GPUs) | Recommendation: Use `--grad_accum 8` or `--grad_accum 16` during training to simulate the official effective batch size. |
+
+
+## Backbone Selection & Engineering Insights
+
+Extensive experiments were conducted during the development of this PyTorch version. The following insights regarding backbone selection and feature extraction are shared to help adapt this framework to various downstream tasks:
+
+*   **Resolution and Domain Shift:** Low resolution feature extraction helps improve robustness under domain shift, which is highly beneficial when using architectures like **Swin** and **ConvNeXt**.
+*   **Curse of Dimensionality:** High-resolution CNN feature extraction can easily cause the model to fall into local minima.
+*   **ConvNeXt v2:** The introduction of **GRN** (Global Response Normalization) in ConvNeXt v2 effectively eases overfitting issues. However, it must be paired with suitable dropout and stochastic depth methods to maximize its potential.
+*   **Swin Transformer v2 Limitation:** **Swin Transformer v2** is not recommended as a backbone for small datasets. Its **scaled cosine attention** mechanism is designed for large-scale dataset training; applying it to smaller datasets often results in stagnant loss curves.
+*   **Swin for Specific Contexts:** Swin-based backbones are particularly suitable for detecting objects with complex, repeating patterns (e.g., flowers or specific textures) due to their Hierarchical and Shifted Window Attention.
+*   **Overfitting Mitigation:** When using the Swin Transformer on small datasets (where feature differences are minimal), aggressive augmentations like **Copy-Paste** and severe color distortion are highly effective at fixing overfitting issues.
+*   **Dropout and Stochastic Depth:** In standard experimental settings, the **Dropout rate** and Stochastic Depth are often defined as 0.5 across all backbone versions for consistency. However, literature on ConvNeXt indicates that smaller backbone variants only require a rate of 0.1 for sufficient regularization. Setting the Dropout rate too high on these smaller models may cause underfitting.
+*   **Ongoing Research:** The exact reasons behind the performance discrepancies across various backbone types and scaling strategies in amodal segmentation still require further clarification.
 
 ## Command-Line Arguments
 
@@ -101,3 +115,4 @@ Run inference on a single image or a batch of images and output Amodal/Visible/I
 python demo.py --checkpoint output/kins_2026/run_official/model_best.pth --input_dir datasets/KINS/testing/image_2 --output_dir output/demo_results
 ```
 *(Note: If the number of classes is hardcoded to 5 in `demo.py`, please change it to 9 to match the KINS dataset.)*
+
