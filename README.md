@@ -16,26 +16,26 @@ To address these pain points, this project re-develops the same model architectu
 
 ```text
 AISFormer-Pytorch/
-?œâ??€ model/
-??  ?œâ??€ __init__.py
-??  ?œâ??€ model.py               # Main model architecture (Aligned RoI, Light Mask Head)
-??  ?œâ??€ dataset.py             # KINS dataset loader (handles amodal/inmodal mask conversion)
-??  ?œâ??€ transformer.py         # Transformer Encoder/Decoder
-??  ?œâ??€ position_encoding.py   # Position encoding
-??  ?”â??€ mlp.py                 # MLP classifier/regressor
-?œâ??€ datasets/
-??  ?”â??€ KINS/                  # KINS dataset storage
-??      ?œâ??€ instances_train.json  # Training annotations
-??      ?œâ??€ instances_val.json    # Validation annotations
-??      ?œâ??€ training/
-??      ??  ?”â??€ image_2/          # Training and validation images
-??      ?”â??€ testing/
-??          ?”â??€ image_2/          # Testing images
-?œâ??€ output/                    # Training outputs and checkpoints
-?œâ??€ train.py                   # Training script
-?œâ??€ evaluate.py                # Evaluation script
-?œâ??€ demo.py                    # Inference visualization script
-?”â??€ requirements.txt           # Environment dependencies
+â”œâ”€â”€ model/
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”œâ”€â”€ model.py               # Main model architecture (Aligned RoI, Light Mask Head)
+â”‚   â”œâ”€â”€ dataset.py             # KINS dataset loader (handles amodal/inmodal mask conversion)
+â”‚   â”œâ”€â”€ transformer.py         # Transformer Encoder/Decoder
+â”‚   â”œâ”€â”€ position_encoding.py   # Position encoding
+â”‚   â””â”€â”€ mlp.py                 # MLP classifier/regressor
+â”œâ”€â”€ datasets/
+â”‚   â””â”€â”€ KINS/                  # KINS dataset storage
+â”‚       â”œâ”€â”€ instances_train.json  # Training annotations
+â”‚       â”œâ”€â”€ instances_val.json    # Validation annotations
+â”‚       â”œâ”€â”€ training/
+â”‚       â”‚   â””â”€â”€ image_2/          # Training and validation images
+â”‚       â””â”€â”€ testing/
+â”‚           â””â”€â”€ image_2/          # Testing images
+â”œâ”€â”€ output/                    # Training outputs and checkpoints
+â”œâ”€â”€ train.py                   # Training script
+â”œâ”€â”€ evaluate.py                # Evaluation script
+â”œâ”€â”€ demo.py                    # Inference visualization script
+â””â”€â”€ requirements.txt           # Environment dependencies
 ```
 
 ## Hyperparameters and Official Setup Comparison
@@ -68,7 +68,11 @@ Extensive experiments were conducted during the development of this PyTorch vers
 
 The training script provides several arguments for flexible configuration. A key advantage of this PyTorch implementation over the official Detectron2 version is the **highly extensible backbone support**. You are no longer restricted to a few predefined backbones; you can easily plug in almost any modern architecture (e.g., ConvNeXt, Swin Transformer, RegNet) via `timm` and `torchvision`.
 
-*   `--backbone`: Specifies the feature extraction backbone (default: `resnet50`). Thanks to the decoupled architecture, this framework supports a much wider variety of backbones than the official repository, allowing seamless integration with state-of-the-art models.
+*   `--backbone`: Specifies the feature extraction backbone (default: `resnet50`). This framework natively supports a massive array of PyTorch and `timm` backbones. Commonly supported variants include:
+    *   **ResNet Series**: `resnet50`, `resnet101`
+    *   **Swin Transformer**: `swin_t`, `swin_s`, `swin_b`
+    *   **ConvNeXt (v1/v2)**: `convnext_tiny`, `convnext_small`, `convnext_base`, `convnextv2_tiny`, `convnextv2_base`
+    *   **RegNet Series**: `regnet_y_3_2gf`, `regnet_y_8gf`, `regnet_y_16gf`
 *   `--batch_size`: Physical batch size per GPU (default: `1`).
 *   `--grad_accum`: Number of gradient accumulation steps (default: `1`). Use this to simulate larger batch sizes on hardware with limited VRAM.
 *   `--official_loss_weight`: Applies a `0.25` multiplier to the occluder and invisible mask losses, replicating the exact loss weighting from the original paper.
@@ -115,4 +119,3 @@ Run inference on a single image or a batch of images and output Amodal/Visible/I
 python demo.py --checkpoint output/kins_2026/run_official/model_best.pth --input_dir datasets/KINS/testing/image_2 --output_dir output/demo_results
 ```
 *(Note: If the number of classes is hardcoded to 5 in `demo.py`, please change it to 9 to match the KINS dataset.)*
-
