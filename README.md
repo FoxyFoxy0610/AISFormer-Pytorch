@@ -16,26 +16,26 @@ To address these pain points, this project re-develops the same model architectu
 
 ```text
 AISFormer-Pytorch/
-â”œâ”€â”€ model/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ model.py               # Main model architecture (Aligned RoI, Light Mask Head)
-â”‚   â”œâ”€â”€ dataset.py             # KINS dataset loader (handles amodal/inmodal mask conversion)
-â”‚   â”œâ”€â”€ transformer.py         # Transformer Encoder/Decoder
-â”‚   â”œâ”€â”€ position_encoding.py   # Position encoding
-â”‚   â””â”€â”€ mlp.py                 # MLP classifier/regressor
-â”œâ”€â”€ datasets/
-â”‚   â””â”€â”€ KINS/                  # KINS dataset storage
-â”‚       â”œâ”€â”€ instances_train.json  # Training annotations
-â”‚       â”œâ”€â”€ instances_val.json    # Validation annotations
-â”‚       â”œâ”€â”€ training/
-â”‚       â”‚   â””â”€â”€ image_2/          # Training and validation images
-â”‚       â””â”€â”€ testing/
-â”‚           â””â”€â”€ image_2/          # Testing images
-â”œâ”€â”€ output/                    # Training outputs and checkpoints
-â”œâ”€â”€ train.py                   # Training script
-â”œâ”€â”€ evaluate.py                # Evaluation script
-â”œâ”€â”€ demo.py                    # Inference visualization script
-â””â”€â”€ requirements.txt           # Environment dependencies
+?œâ??€ model/
+??  ?œâ??€ __init__.py
+??  ?œâ??€ model.py               # Main model architecture (Aligned RoI, Light Mask Head)
+??  ?œâ??€ dataset.py             # KINS dataset loader (handles amodal/inmodal mask conversion)
+??  ?œâ??€ transformer.py         # Transformer Encoder/Decoder
+??  ?œâ??€ position_encoding.py   # Position encoding
+??  ?”â??€ mlp.py                 # MLP classifier/regressor
+?œâ??€ datasets/
+??  ?”â??€ KINS/                  # KINS dataset storage
+??      ?œâ??€ instances_train.json  # Training annotations
+??      ?œâ??€ instances_val.json    # Validation annotations
+??      ?œâ??€ training/
+??      ??  ?”â??€ image_2/          # Training and validation images
+??      ?”â??€ testing/
+??          ?”â??€ image_2/          # Testing images
+?œâ??€ output/                    # Training outputs and checkpoints
+?œâ??€ train.py                   # Training script
+?œâ??€ evaluate.py                # Evaluation script
+?œâ??€ demo.py                    # Inference visualization script
+?”â??€ requirements.txt           # Environment dependencies
 ```
 
 ## Hyperparameters and Official Setup Comparison
@@ -46,8 +46,8 @@ This framework aligns with the official hyperparameters as much as possible. How
 |---|---|---|---|
 | **Transformer Head** | `n_heads=2`, `dim_ff=2048` | `n_heads=2`, `dim_ff=2048` | Fully aligned. |
 | **Mask Loss Weight** | Default is `1.0` | Occluder and Invisible Mask is `0.25` | **Crucial:** You must add the `--official_loss_weight` flag during training to enable the official 0.25 weight. |
-| **Optimizer** | AdamW (lr=1e-4, wd=0.05) | AdamW (lr=1e-4, wd=0.05) | Aligned. |
-| **Learning Rate Schedule** | `CosineAnnealingLR` | `MultiStepLR` (typically drops LR at 24k/44k steps) | Currently using Cosine Annealing for smooth decay. To replicate the official setup exactly, change this to MultiStepLR in `train.py`. |
+| **Optimizer & LR** | AdamW (lr=1e-4, wd=0.05) | SGD (lr=0.0025) | The official literature uses SGD, but AdamW is provided here as the default for better stability. |
+| **Learning Rate Schedule** | `CosineAnnealingLR` (50,000 iters) | `MultiStepLR` (48,000 iters, drops at 24k/44k) | Currently using Cosine Annealing over 50,000 iterations for smooth decay. To replicate the official setup exactly, change this to MultiStepLR in `train.py`. |
 | **Batch Size** | Default `--batch_size 1` | Typically `8` or `16` (across multiple GPUs) | Recommendation: Use `--grad_accum 8` or `--grad_accum 16` during training to simulate the official effective batch size. |
 
 
@@ -119,3 +119,4 @@ Run inference on a single image or a batch of images and output Amodal/Visible/I
 python demo.py --checkpoint output/kins_2026/run_official/model_best.pth --input_dir datasets/KINS/testing/image_2 --output_dir output/demo_results
 ```
 *(Note: If the number of classes is hardcoded to 5 in `demo.py`, please change it to 9 to match the KINS dataset.)*
+
