@@ -42,13 +42,13 @@ AISFormer-Pytorch/
 
 This framework aligns with the official hyperparameters as much as possible. However, please note the following settings during execution:
 
-| Parameter | Current Default Setting | Official / Common Setting | Description / Recommendation |
+| Parameter | Current Default Setting | Official Setting | Description / Recommendation |
 |---|---|---|---|
 | **Transformer Head** | `n_heads=2`, `dim_ff=2048` | `n_heads=2`, `dim_ff=2048` | Fully aligned. |
 | **Mask Loss Weight** | Default is `1.0` | Occluder and Invisible Mask is `0.25` | **Crucial:** You must add the `--official_loss_weight` flag during training to enable the official 0.25 weight. |
 | **Optimizer & LR** | AdamW (lr=1e-4, wd=0.05) | SGD (lr=0.0025) | The official literature uses SGD, but AdamW is provided here as the default for better stability. |
 | **Learning Rate Schedule** | `CosineAnnealingLR` (50,000 iters) | `MultiStepLR` (48,000 iters, drops at 24k/44k) | Currently using Cosine Annealing over 50,000 iterations for smooth decay. To replicate the official setup exactly, change this to MultiStepLR in `train.py`. |
-| **Batch Size** | Default `--batch_size 1` | Typically `8` or `16` (across multiple GPUs) | Recommendation: Use `--grad_accum 8` or `--grad_accum 16` during training to simulate the official effective batch size. |
+| **Batch Size** | Default `--batch_size 1` | `1` | Fully aligned. (Use `--grad_accum` if you want to simulate larger batch sizes). |
 
 
 ## Backbone Selection & Engineering Insights
@@ -69,7 +69,7 @@ Extensive experiments were conducted during the development of this PyTorch vers
 The training script provides several arguments for flexible configuration. A key advantage of this PyTorch implementation over the official Detectron2 version is the **highly extensible backbone support**. You are no longer restricted to a few predefined backbones; you can easily plug in almost any modern architecture (e.g., ConvNeXt, Swin Transformer, RegNet) via `timm` and `torchvision`.
 
 *   `--backbone`: Specifies the feature extraction backbone (default: `resnet50`). This framework natively supports a massive array of PyTorch and `timm` backbones. Commonly supported variants include:
-    *   **ResNet Series**: `resnet50`, `resnet101`
+    *   **ResNet Series**: `resnet50`, `resnet101`, `resnet152`
     *   **Swin Transformer**: `swin_t`, `swin_s`, `swin_b`
     *   **ConvNeXt (v1/v2)**: `convnext_tiny`, `convnext_small`, `convnext_base`, `convnextv2_tiny`, `convnextv2_base`
     *   **RegNet Series**: `regnet_y_3_2gf`, `regnet_y_8gf`, `regnet_y_16gf`
@@ -119,4 +119,5 @@ Run inference on a single image or a batch of images and output Amodal/Visible/I
 python demo.py --checkpoint output/kins_2026/run_official/model_best.pth --input_dir datasets/KINS/testing/image_2 --output_dir output/demo_results
 ```
 *(Note: If the number of classes is hardcoded to 5 in `demo.py`, please change it to 9 to match the KINS dataset.)*
+
 
