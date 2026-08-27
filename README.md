@@ -1,4 +1,4 @@
-# AISFormer-Pytorch
+﻿# AISFormer-Pytorch
 
 [Official GitHub (UARK-AICV/AISFormer)](https://github.com/UARK-AICV/AISFormer) | [Paper (arXiv:2210.06323)](https://arxiv.org/abs/2210.06323)
 
@@ -16,33 +16,33 @@ To address these pain points, this project re-develops the same model architectu
 
 ```text
 AISFormer-Pytorch/
-├── model/
-│   ├── __init__.py
-│   ├── model.py               # Main model architecture (Aligned RoI, Light Mask Head)
-│   ├── dataset.py             # KINS dataset loader (handles amodal/inmodal mask conversion)
-│   ├── transformer.py         # Transformer Encoder/Decoder
-│   ├── position_encoding.py   # Position encoding
-│   └── mlp.py                 # MLP classifier/regressor
-├── datasets/
-│   └── KINS/                  # KINS dataset storage
-│       ├── instances_train.json  # Training annotations
-│       ├── instances_val.json    # Validation annotations
-│       ├── training/
-│       │   └── image_2/          # Training and validation images
-│       └── testing/
-│           └── image_2/          # Testing images
-├── output/                    # Training outputs and checkpoints
-├── train.py                   # Training script
-├── evaluate.py                # Evaluation script
-├── demo.py                    # Inference visualization script
-└── requirements.txt           # Environment dependencies
+??? model/
+??  ??? __init__.py
+??  ??? model.py               # Main model architecture (Aligned RoI, Light Mask Head)
+??  ??? dataset.py             # KINS dataset loader (handles amodal/inmodal mask conversion)
+??  ??? transformer.py         # Transformer Encoder/Decoder
+??  ??? position_encoding.py   # Position encoding
+??  ??? mlp.py                 # MLP classifier/regressor
+??? datasets/
+??  ??? KINS/                  # KINS dataset storage
+??      ??? instances_train.json  # Training annotations
+??      ??? instances_val.json    # Validation annotations
+??      ??? training/
+??      ??  ??? image_2/          # Training and validation images
+??      ??? testing/
+??          ??? image_2/          # Testing images
+??? output/                    # Training outputs and checkpoints
+??? train.py                   # Training script
+??? evaluate.py                # Evaluation script
+??? demo.py                    # Inference visualization script
+??? requirements.txt           # Environment dependencies
 ```
 
 ## Hyperparameters and Official Setup Comparison
 
 This framework aligns with the official hyperparameters as much as possible. However, please note the following settings during execution:
 
-| Parameter | Current Default Setting | Official Setting | Description / Recommendation |
+| Parameter | Proposed Setting | Official Setting | Description / Recommendation |
 |---|---|---|---|
 | **Transformer Head** | `n_heads=2`, `dim_ff=2048` | `n_heads=2`, `dim_ff=2048` | Fully aligned. |
 | **Mask Loss Weight** | Default is `1.0` | Occluder and Invisible Mask is `0.25` | **Crucial:** You must add the `--official_loss_weight` flag during training to enable the official 0.25 weight. |
@@ -118,3 +118,4 @@ Run inference on a single image or a batch of images and output Amodal/Visible/I
 python demo.py --checkpoint output/kins_2026/run_official/model_best.pth --input_dir datasets/KINS/testing/image_2 --output_dir output/demo_results
 ```
 *(Note: If the number of classes is hardcoded to 5 in `demo.py`, please change it to 9 to match the KINS dataset.)*
+
