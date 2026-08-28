@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # Functional Block: Dataset Loading and Preprocessing Block
 # Description: This module is responsible for the essential operations of Dataset Loading and Preprocessing Block.
 # ==============================================================================
@@ -6,12 +6,13 @@ import torch
 import os
 import numpy as np
 from PIL import Image, ImageOps
-from pycocotools.coco import COCO
+import cv2  # [?啣?] OpenCV 擃葬??from pycocotools.coco import COCO
 import pycocotools.mask as mask_util
 import random 
 from torchvision.transforms import v2 as T
+import torch.nn.functional as F  # [?啣?] PyTorch C++ ?桃蔗蝮格
 
-# ?��?轉�?
+# ?箇?頧?
 def get_transform(train):
     transforms = []
     transforms.append(T.ToImage())
@@ -26,72 +27,58 @@ class AmodalTomatoDataset(torch.utils.data.Dataset):
         self.ids = list(sorted(self.coco.imgs.keys()))
         self.target_size = target_size
         self.is_train = "train" in annotations_file.lower()
-        print(f"?? Dataset initialized. Mode: CPU (Pure PIL) Resize to {target_size}, is_train={self.is_train}")
+        print(f"?? KINS Dataset initialized. Mode: C++/OpenCV Accelerated. Target Resize: {target_size}, is_train={self.is_train}")
 
-    def _polygons_to_mask(self, segm, height, width):
-        """Helper: �?Polygon/RLE 轉為 Numpy array (uint8)"""
-        # [?�鍵修正] ?�裡?�本?�傳 torch.zeros，�???PIL 崩潰
-        # ?�在統�??�傳 np.zeros
-        
+    def _poly_to_rle(self, segm, height, width):
+        """[?芸?] ?? Polygon 頧 RLE dict嚗??脰? decode嚗誑靘踹?蝥?C++ ?寥?閫?Ⅳ"""
         if isinstance(segm, list):
             if not segm: 
-                return np.zeros((height, width), dtype=np.uint8)
+                return mask_util.encode(np.asfortranarray(np.zeros((height, width), dtype=np.uint8)))
             rles = mask_util.frPyObjects(segm, height, width)
-            rle = mask_util.merge(rles)
+            return mask_util.merge(rles)
         elif isinstance(segm, dict):
-            rle = segm
+            return segm
         else:
-            return np.zeros((height, width), dtype=np.uint8)
-        
-        mask = mask_util.decode(rle)
-        # mask ?�身就是 numpy array
-        return mask
+            return mask_util.encode(np.asfortranarray(np.zeros((height, width), dtype=np.uint8)))
 
     def _resize_sample_cpu(self, data):
-        """使用�?PIL ?��??�?�縮??(?�穩�?，避??Illegal Instruction)"""
+        """[?芸?] 雿輻 OpenCV ??PyTorch C++ Backend ?脰?擃葬??""
         w, h = data['width'], data['height']
         scale = self.target_size / max(w, h)
         
+        # 頧???Numpy array 敺耦???(H, W, 3)嚗???靘??RGB
+        img_np = np.array(data['image'])
+        
         if scale >= 1.0:
-            # 不�?縮放，直?��? Tensor
-            img_tensor = T.functional.to_image(data['image'])
+            img_tensor = T.functional.to_image(img_np)
             img_tensor = T.functional.to_dtype(img_tensor, torch.float32, scale=True)
             data['image'] = img_tensor
             
-            # �?masks (numpy list) 轉為 Tensor stack
-            # ?�裡必�???np.stack，�???list 裡面?�在?�是 numpy array
-            data['vis_masks'] = torch.from_numpy(np.stack(data['vis_masks'])) if data['vis_masks'] else torch.zeros((0, h, w), dtype=torch.uint8)
-            data['amodal_masks'] = torch.from_numpy(np.stack(data['amodal_masks'])) if data['amodal_masks'] else torch.zeros((0, h, w), dtype=torch.uint8)
-            data['bg_masks'] = torch.from_numpy(np.stack(data['bg_masks'])) if data['bg_masks'] else torch.zeros((0, h, w), dtype=torch.uint8)
+            data['vis_masks'] = torch.from_numpy(data['vis_masks']) if len(data['vis_masks']) > 0 else torch.zeros((0, h, w), dtype=torch.uint8)
+            data['amodal_masks'] = torch.from_numpy(data['amodal_masks']) if len(data['amodal_masks']) > 0 else torch.zeros((0, h, w), dtype=torch.uint8)
+            data['bg_masks'] = torch.from_numpy(data['bg_masks']) if len(data['bg_masks']) > 0 else torch.zeros((0, h, w), dtype=torch.uint8)
             return data
             
         new_w, new_h = int(w * scale), int(h * scale)
         
-        # 1. Image Resize (PIL Bilinear)
-        img_pil = data['image'].resize((new_w, new_h), resample=Image.BILINEAR)
-        img_tensor = T.functional.to_image(img_pil)
+        # 1. Image Resize (OpenCV BICUBIC)
+        img_resized = cv2.resize(img_np, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+        img_tensor = T.functional.to_image(img_resized)
         img_tensor = T.functional.to_dtype(img_tensor, torch.float32, scale=True)
         data['image'] = img_tensor 
         
-        # 2. Mask Resize (PIL Nearest)
-        def resize_stack_pil(masks_list):
-            if not masks_list: 
+        # 2. Mask Resize (PyTorch C++ Backend: F.interpolate)
+        def resize_masks_tensor(masks_np):
+            if len(masks_np) == 0:
                 return torch.zeros((0, new_h, new_w), dtype=torch.uint8)
-            
-            resized_masks = []
-            for mask_np in masks_list:
-                # Numpy -> PIL (?�裡?�在安全了�??�為 mask_np 確信??numpy)
-                mask_pil = Image.fromarray(mask_np)
-                # Resize (Nearest to keep 0/1)
-                mask_pil = mask_pil.resize((new_w, new_h), resample=Image.NEAREST)
-                # PIL -> Tensor
-                resized_masks.append(torch.from_numpy(np.array(mask_pil)))
-            
-            return torch.stack(resized_masks)
+            # 撠?Numpy shape (N, H, W) 頧 Tensor (N, 1, H, W)
+            masks_t = torch.from_numpy(masks_np).unsqueeze(1).float()
+            # C++ ?寥??葬??            masks_resized = F.interpolate(masks_t, size=(new_h, new_w), mode='nearest')
+            return masks_resized.squeeze(1).byte()
 
-        data['vis_masks'] = resize_stack_pil(data['vis_masks'])
-        data['amodal_masks'] = resize_stack_pil(data['amodal_masks'])
-        data['bg_masks'] = resize_stack_pil(data['bg_masks'])
+        data['vis_masks'] = resize_masks_tensor(data['vis_masks'])
+        data['amodal_masks'] = resize_masks_tensor(data['amodal_masks'])
+        data['bg_masks'] = resize_masks_tensor(data['bg_masks'])
         
         # 3. BBox Resize
         if data['boxes'].numel() > 0: 
@@ -122,32 +109,37 @@ class AmodalTomatoDataset(torch.utils.data.Dataset):
             if ann.get('iscrowd', 0) == 1: continue
             valid_anns.append(ann)
             
-        boxes, labels, vis_masks, amodal_masks, bg_masks = [], [], [], [], []
+        boxes, labels, vis_rles, amodal_rles = [], [], [], []
         if valid_anns:
             for ann in valid_anns:
                 boxes.append(ann['bbox'])
                 labels.append(ann['category_id'])
-                vis_masks.append(self._polygons_to_mask(ann.get('inmodal_seg', ann['segmentation']), img_h, img_w))
-                amodal_masks.append(self._polygons_to_mask(ann['segmentation'], img_h, img_w))
+                # KINS 璅酉?摩嚗nmodal_seg ?臬閬蝵抬?segmentation ??Amodal ?桃蔗
+                vis_rles.append(self._poly_to_rle(ann.get('inmodal_seg', ann['segmentation']), img_h, img_w))
+                amodal_rles.append(self._poly_to_rle(ann['segmentation'], img_h, img_w))
 
-            # Dynamically compute bg_masks (occluder masks) for each object
-            # An occluder mask for object `i` is the union of the visible masks of all OTHER objects.
-            # Using O(N) integer sum optimization:
-            total_vis = np.sum(vis_masks, axis=0) if len(vis_masks) > 0 else np.zeros((img_h, img_w))
-            for v in vis_masks:
-                bg = (total_vis - v) > 0
-                bg_masks.append(bg.astype(np.uint8))
+            # [?芸?] Pycocotools ?寥? C++ 閫?Ⅳ
+            vis_masks_hw_n = mask_util.decode(vis_rles)
+            amodal_masks_hw_n = mask_util.decode(amodal_rles)
+
+            # [?芸?] ?? Occluder 閮? (?湔??(H, W, N) 銝誨?剝?蝞?
+            total_vis = vis_masks_hw_n.sum(axis=2, keepdims=True)
+            bg_masks_hw_n = (total_vis - vis_masks_hw_n) > 0
+
+            # 頧蔭??(N, H, W)
+            vis_masks = vis_masks_hw_n.transpose(2, 0, 1)
+            amodal_masks = amodal_masks_hw_n.transpose(2, 0, 1)
+            bg_masks = bg_masks_hw_n.transpose(2, 0, 1).astype(np.uint8)
 
             boxes_t = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
             boxes_t[:, 2:] += boxes_t[:, :2] 
             labels_t = torch.as_tensor(labels, dtype=torch.int64)
-            # masks ?�在??list of numpy arrays
         else:
             boxes_t = torch.zeros((0, 4), dtype=torch.float32)
             labels_t = torch.zeros(0, dtype=torch.int64)
-            vis_masks = []
-            amodal_masks = []
-            bg_masks = []
+            vis_masks = np.zeros((0, img_h, img_w), dtype=np.uint8)
+            amodal_masks = np.zeros((0, img_h, img_w), dtype=np.uint8)
+            bg_masks = np.zeros((0, img_h, img_w), dtype=np.uint8)
 
         return {
             "image": img, 
@@ -159,8 +151,7 @@ class AmodalTomatoDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         data = self._load_sample(idx)
         
-        # Horizontal Flip (DA)
-        if self.is_train and random.random() > 0.5:
+        # [?芸?] Horizontal Flip (DA) - ?寧???蕃頧?        if self.is_train and random.random() > 0.5:
             # 1. Flip Image
             data["image"] = data["image"].transpose(Image.FLIP_LEFT_RIGHT)
             # 2. Flip Boxes
@@ -170,13 +161,11 @@ class AmodalTomatoDataset(torch.utils.data.Dataset):
                 xmax = data["boxes"][:, 2].clone()
                 data["boxes"][:, 0] = w - xmax
                 data["boxes"][:, 2] = w - xmin
-            # 3. Flip Masks
-            for i in range(len(data["vis_masks"])):
-                data["vis_masks"][i] = np.fliplr(data["vis_masks"][i])
-            for i in range(len(data["amodal_masks"])):
-                data["amodal_masks"][i] = np.fliplr(data["amodal_masks"][i])
-            for i in range(len(data["bg_masks"])):
-                data["bg_masks"][i] = np.fliplr(data["bg_masks"][i])
+            # 3. Flip Masks (雿輻 np.flip ?寥??? (N, H, W) ?祝摨衣雁摨佗???axis=2)
+            if len(data["vis_masks"]) > 0:
+                data["vis_masks"] = np.flip(data["vis_masks"], axis=2).copy()
+                data["amodal_masks"] = np.flip(data["amodal_masks"], axis=2).copy()
+                data["bg_masks"] = np.flip(data["bg_masks"], axis=2).copy()
 
         data = self._resize_sample_cpu(data) 
         
