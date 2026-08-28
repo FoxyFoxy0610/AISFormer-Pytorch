@@ -12,6 +12,17 @@ To address these pain points, this project re-develops the same model architectu
 
 ---
 
+## Performance Benchmark (KINS Dataset)
+
+![Model Performance on KINS Dataset](png/Performance.png)
+
+To validate the effectiveness of our PyTorch implementation, comprehensive benchmarking was conducted using an **NVIDIA RTX 4090** GPU with **CUDA 12.8**. The scatter plot above compares the Average Precision (AP) and Average Recall (AR) between the official Detectron2 baseline (grey dots) and our decoupled PyTorch implementation across various backbones (colored dots).
+
+*   **Comparable Precision (AP):** The overall AP of our pure PyTorch implementation tightly approaches the performance reported in the official paper, with our ConvNeXt v2 B backbone reaching a highly competitive AP of approximately 0.342.
+*   **Significantly Enhanced Recall (AR):** Most notably, our implementation achieves roughly a **2x improvement in Average Recall (AR)**, boosting it from the official baseline's ~0.22 to an impressive ~0.45 range. This substantial increase in Recall demonstrates that our decoupled architecture and advanced training strategies can capture far more valid amodal instances that the original framework might have missed.
+
+---
+
 ## Directory Structure
 
 ```text
@@ -32,6 +43,8 @@ AISFormer-Pytorch/
 │       └── testing/
 │           └── image_2/          # Testing images
 ├── output/                    # Training outputs and checkpoints
+├── png/                       # Assets and performance charts
+│   └── Performance.png
 ├── train.py                   # Training script
 ├── evaluate.py                # Evaluation script
 ├── demo.py                    # Inference visualization script
