@@ -29,17 +29,17 @@ To validate the effectiveness of our PyTorch implementation, comprehensive bench
 
 To provide transparency on the performance metrics (such as the 2x AR increase and specific backbone variations), we outline the critical structural and engineering differences between our PyTorch pipeline and the official Detectron2 framework:
 
-### 📊 1. Post-Processing & Evaluation: The Catalyst for the AR Surge
+### 1. Post-Processing & Evaluation: The Catalyst for the AR Surge
 *   **Evaluation NMS Threshold (Crucial Key):**
     *   **Official Version:** Strictly adhered to a standard `NMS=0.5`. In highly crowded scenes like KINS, this aggressive threshold erroneously suppresses highly overlapping objects (treating the occluder and occluded as duplicates), resulting in a massive loss of True Positives and an AR of only ~22%.
     *   **Our Version:** We adopted an extremely lenient `NMS=0.95` during post-processing. This allows highly overlapping bounding boxes to legally coexist, successfully rescuing target instances hidden behind others. This is the **direct cause of our model's AR skyrocketing to ~47%**.
 
-### ⚙️ 2. Optimizer & Architecture Compatibility
+### 2. Optimizer & Architecture Compatibility
 *   **The AdamW vs. SGD Paradigm:**
     *   **Official Version (RegNet Dominance):** Utilized traditional SGD. RegNet is an architecture specifically optimized for SGD via Neural Architecture Search (NAS). The slow convergence of SGD acted as a natural regularizer on the small KINS dataset, allowing the official RegNet to perform exceptionally well.
     *   **Our Version (ConvNeXt Rise, RegNet Decline):** We fully transitioned to AdamW. AdamW's aggressive adaptive learning rate disrupted the smooth gradient trajectory that RegNet relies on, leading to severe overfitting on the small dataset (especially RegNet_16GF). Conversely, this powerful optimization momentum perfectly unleashed modern, human-designed CNNs (such as ResNet-101 and the ConvNeXt family), allowing them to soar in our pipeline.
 
-### 🧠 3. RPN Training Strategy & Feature Extraction
+### 3. RPN Training Strategy & Feature Extraction
 *   **RPN Candidate Box Quantity (Hard Example Mining):**
     *   **Official Version:** The RoI Head only receives 1,000 proposal boxes during training.
     *   **Our Version:** We force the retention of 2,000 proposal boxes during training (`rpn_post_nms_top_n_train=2000`). The extra 1,000 boxes mostly consist of blurry, fragmented "Hard Examples." This forces the Mask Head to extract occlusion features from extreme noise during training, significantly forging the model's "hard recall capability" when dealing with complex occlusions.
@@ -47,7 +47,7 @@ To provide transparency on the performance metrics (such as the 2x AR increase a
     *   **Official Limitation:** Pure deep CNNs are prone to "Feature Collapse" (dead channels) when predicting Amodal (invisible occluded) regions, losing the ability to hallucinate boundaries.
     *   **Our Breakthrough:** By introducing the GRN (Global Response Normalization) exclusive to **ConvNeXt v2**, we force all feature channels to remain active and competitive. This equips the network with immensely rich contextual features to reconstruct invisible regions, pushing our ConvNeXt v2-Base to break the ceiling and achieve our best AP record.
 
-### 🛠️ 4. Low-Level Data Pipeline & Engineering Nuances
+### 4. Low-Level Data Pipeline & Engineering Nuances
 *   **C++ Dataloader & Mask Boundary Guarding:**
     *   **Official Version:** Relied on Python/PIL for image augmentation. When rotating or scaling, the highly complex overlapping boundaries of Amodal Masks suffer from severe aliasing and geometric distortion.
     *   **Our Version:** Introduced a custom `v1_cpp` high-precision interpolation pipeline (backed by OpenCV). This perfectly preserves the physical boundaries of the binarized masks, providing the network with extremely high-quality Ground Truths and substantively elevating the baseline IoU performance.
