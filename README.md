@@ -20,6 +20,9 @@ To validate the effectiveness of our PyTorch implementation, comprehensive bench
 
 *   **Comparable Precision (AP):** The overall AP of our pure PyTorch implementation tightly approaches the performance reported in the official paper, with our ConvNeXt v2 B backbone reaching a highly competitive AP of approximately 0.342.
 *   **Significantly Enhanced Recall (AR):** Most notably, our implementation achieves roughly a **2x improvement in Average Recall (AR)**, boosting it from the official baseline's ~0.22 to an impressive ~0.45 range. This substantial increase in Recall demonstrates that our decoupled architecture and advanced training strategies can capture far more valid amodal instances that the original framework might have missed.
+*   **Note on Performance Variations:** While the results are highly competitive, a slight discrepancy in absolute AP still exists compared to the official Detectron2 framework. We attribute this minor gap to two main factors:
+    1.  **Backbone Initialization Differences:** The pre-trained weight structures and parameter initialization strategies provided by standard libraries (`timm`/`torchvision`) differ subtly from those hardcoded within the custom Detectron2 ecosystem.
+    2.  **Computational Precision & Engine:** Inherent differences in underlying floating-point arithmetic, region-of-interest (RoI) coordinate transformations, and grid sampling precision between the standalone PyTorch backend and the highly customized Detectron2 engine.
 
 ---
 
